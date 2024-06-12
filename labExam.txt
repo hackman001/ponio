@@ -1,0 +1,233 @@
+import numpy as np 
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+df = pd.read_csv("Iris.csv")
+print(df.head())
+
+
+
+from sklearn.preprocessing import LabelEncoder,StandardScaler, MinMaxScaler
+
+encoder = LabelEncoder()
+df["Species"] = encoder.fit_transform(df["Species"])
+df.corr()
+
+fig = plt.figure(figsize=(10,10))
+sns.heatmap(df.corr(),annot=True)
+
+
+
+Numerical = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
+
+scaler = MinMaxScaler()
+
+df[Numerical] = scaler.fit_transform(df[Numerical])
+df.head()
+
+
+
+Numerical = ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"]
+
+
+scaler = StandardScaler()
+
+df[Numerical] = scaler.fit_transform(df[Numerical])
+df.head()
+
+
+from sklearn.feature_selection import RFE
+from sklearn.linear_model import LogisticRegression
+
+X = df[Numerical]
+y = df["Species"]
+
+model = LogisticRegression()
+rfe = RFE(model,n_features_to_select = 2)
+
+fit = rfe.fit(X,y)
+selected_features = np.array(Numerical)[fit.support_]
+print("Selected Features:", selected_features)
+
+df_selected = df[selected_features]
+print(df_selected.head())
+
+
+
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import BaggingClassifier, RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+
+X = df[Numerical]
+y = df["Species"]
+
+X_train, X_test, y_train, y_test  = train_test_split(X,y, test_size=0.3,random_state=42)
+
+bagging_model = BaggingClassifier(n_estimators=100, random_state=42)
+bagging_model.fit(X_train,y_train)
+y_pred_bagging = bagging_model.predict(X_test)
+
+
+rf = RandomForestClassifier(n_estimators=100,random_state=42)
+rf.fit(X_train,y_train)
+y_pred_rf = rf.predict(X_test)
+
+bagging_accuracy = accuracy_score(y_test, y_pred_bagging)
+rf_accuracy = accuracy_score(y_test, y_pred_rf)
+
+print("Bagging Classifier Accuracy: {:.2f}%".format(bagging_accuracy * 100))
+print("Random Forest Classifier Accuracy: {:.2f}%".format(rf_accuracy * 100))
+
+print("\nBagging Classifier Classification Report:")
+print(classification_report(y_test, y_pred_bagging))
+
+print("\nRandom Forest Classifier Classification Report:")
+print(classification_report(y_test, y_pred_rf))
+
+conf_matrix_bagging = confusion_matrix(y_test, y_pred_bagging)
+conf_matrix_rf = confusion_matrix(y_test, y_pred_rf)
+
+# Plotting confusion matrices
+plt.figure(figsize=(12, 5))
+
+plt.subplot(1, 2, 1)
+sns.heatmap(conf_matrix_bagging, annot=True)
+plt.title('Bagging Classifier Confusion Matrix')
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+
+plt.subplot(1, 2, 2)
+sns.heatmap(conf_matrix_rf, annot=True)
+plt.title('Random Forest Confusion Matrix')
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+
+plt.tight_layout()
+plt.show()
+
+
+
+
+
+
+from sklearn.feature_selection import SelectKBest, f_regression
+
+# Assuming X_train and y_train are your feature matrix and target vector
+# Select the top k features based on their F-values (ANOVA F-value)
+k = 5  # Number of top features to select
+selector = SelectKBest(score_func=f_regression, k=k)
+X_new = selector.fit_transform(X_train, y_train)
+
+# Get the selected feature indices
+selected_indices = selector.get_support(indices=True)
+
+# Get the names of the selected features
+selected_features = X.columns[selected_indices]
+print("Selected Features:", selected_features)
+
+
+
+
+from sklearn.metrics import mean_squared_error
+
+# Assuming y_true and y_pred are your actual and predicted values
+mse = mean_squared_error(y_true, y_pred)
+
+
+# Calculate SSE directly without using a library
+sse = sum((y_true - y_pred) ** 2)
+
+
+
+from sklearn.metrics import r2_score
+
+# Assuming y_true and y_pred are your actual and predicted values
+r2 = r2_score(y_true, y_pred)
+
+
+
+
+
+
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_squared_error
+
+rf_model = RandomForestRegressor(n_estimators=100, random_state=42)
+rf_model.fit(X_train, y_train)
+y_pred_rf = rf_model.predict(X_test)
+mse_rf = mean_squared_error(y_test, y_pred_rf)
+print(f"Random Forest MSE: {mse_rf}")
+
+
+
+from sklearn.ensemble import StackingClassifier
+from sklearn.linear_model import LogisticRegression
+
+# Define the base models
+estimators = [
+    ('rf', RandomForestClassifier(n_estimators=100, random_state=42)),
+    ('gb', GradientBoostingClassifier(n_estimators=100, random_state=42))
+]
+
+# Initialize the Stacking model with a final classifier
+
+stacking_model = StackingClassifier(estimators=estimators, final_estimator=LogisticRegression())
+
+# Train the model
+stacking_model.fit(X_train, y_train)
+
+# Predict on the test set
+y_pred_stacking = stacking_model.predict(X_test)
+
+# Evaluate the model
+print("Evaluating Stacking model...")
+accuracy_stacking = accuracy_score(y_test, y_pred_stacking)
+print(f'Stacking Accuracy: {accuracy_stacking:.4f}\n')
+
+
+
+from sklearn.ensemble import GradientBoostingClassifier
+
+# Initialize the Gradient Boosting model
+gb_model = GradientBoostingClassifier(n_estimators=100, random_state=42)
+
+# Train the model
+gb_model.fit(X_train, y_train)
+
+# Predict on the test set
+y_pred_gb = gb_model.predict(X_test)
+
+# Evaluate the model
+print("Evaluating Gradient Boosting model...")
+accuracy_gb = accuracy_score(y_test, y_pred_gb)
+print(f'Gradient Boosting Accuracy: {accuracy_gb:.4f}\n')
+
+
+
+
+
+
+
+
+
+from sklearn.ensemble import BaggingClassifier
+from sklearn.tree import DecisionTreeClassifier
+
+# Initialize the base classifier
+base_dt = DecisionTreeClassifier()
+
+# Initialize the Bagging model
+bagging_model = BaggingClassifier(estimator=base_dt, n_estimators=100, random_state=42)
+
+# Train the model
+bagging_model.fit(X_train, y_train)
+
+# Predict on the test set
+y_pred_bagging = bagging_model.predict(X_test)
+
+# Evaluate the model
+print("Evaluating Bagging model...")
+accuracy_bagging = accuracy_score(y_test, y_pred_bagging)
+print(f'Bagged Decision Trees Accuracy: {accuracy_bagging:.4f}\n')
+
+
